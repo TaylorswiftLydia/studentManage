@@ -170,7 +170,7 @@
                         <el-button style="margin-top: 20px;" @click="uploadPhoto" type="primary" size="mini" plain>上传照片</el-button>
                         <el-row style="margin-top: 20px;">
                           <el-button type="primary" size="mini" plain>编辑</el-button>
-                          <el-button type="danger" size="mini" plain>退学</el-button>
+                          <!-- <el-button type="danger" size="mini" plain>退学</el-button> -->
                         </el-row>
                       </el-col>
                     </el-row>
@@ -255,7 +255,7 @@ export default {
         {label:'母亲姓名',prop:'motherName',show:false},{label:'母亲工作单位',prop:'motherWorkUnit',show:false},
         {label:'母亲工作单位地址',prop:'motherWorkUnitAddress',show:false},{label:'母亲职务',prop:'motherDuty',show:false},
         {label:'母亲邮编',prop:'motherPostcode',show:false},{label:'母亲电话',prop:'motherTelNumber',show:false},
-        {label:'学业状态',prop:'studyStatus',show:false}
+        {label:'学业状态',prop:'studyCondition',show:false}
       ],
       allInfoProperties:[
         {label:'学号',code:"studentId"},{label:'姓名',code:'name'},{label:'年级',code:'grade'},
@@ -272,7 +272,7 @@ export default {
         {label:'父亲工作单位地址',code:'fatherWorkUnitAddress'},{label:'父亲职务',ccode:'fatherDuty'},{label:'父亲邮编',code:'fatherPostcode'},{label:'父亲电话',code:'fatherTelNumber'},
         {label:'母亲姓名',code:'motherName'},{label:'母亲工作单位',code:'motherWorkUnit'},{label:'母亲工作单位地址',code:'motherWorkUnitAddress'},{label:'母亲职务',code:'motherDuty'},
         {label:'母亲邮编',code:'motherPostcode'},{label:'母亲电话',code:'motherTelNumber'},
-        {label:'学业状态',code:'studyStatus'}
+        {label:'学业状态',code:'studyCondition'}
       ],
       personalInfoProperties:[
         {label:'学号',code:"studentId"},{label:'姓名',code:'name'},{label:'年级',code:'grade'},{label:'班级',code:'studentClass'},
@@ -326,7 +326,7 @@ export default {
         {prop: "motherName",label:'母亲姓名',checked:false},{prop: "motherWorkUnit",label:'母亲工作单位',checked:false},
         {prop: "motherWorkUnitAddress",label:'母亲工作单位地址',checked:false},{prop: "motherDuty",label:'母亲职务',checked:false},
         {prop: "motherPostcode",label:'母亲邮编',checked:false},{prop: "motherTelNumber",label:'母亲电话',checked:false},
-        {prop: "studyStatus",label:'学业状态',checked:false}
+        {prop: "studyCondition",label:'学业状态',checked:false}
       ],
       activeInfoName:'allInfo',
       password:'',
@@ -507,7 +507,7 @@ export default {
         jumpToPage(){
           var self=this
           $.ajax({
-            url:"http://180.76.249.233:8080/newhelp/api/historicStudents/"+sessionStorage.getItem('userName')+"/"+this.pageSize+"/"+this.currentPage+"/"+this.sortMethod,
+            url:"http://"+self.Global.ipAddr+"/newhelp/api/baseStudents/history/"+sessionStorage.getItem('userName')+"/"+this.pageSize+"/"+this.currentPage+"/"+this.sortMethod,
         beforeSend:function(request){
           request.setRequestHeader("Authorization",sessionStorage.getItem('token'));
         },
@@ -520,7 +520,7 @@ export default {
             self.testData=res.data.baseStudents
             self.totalNumber=res.data.page.recordNum
           }else{
-            alert("数据获取错误");
+            alert("res 数据获取错误");
           }
         },
         error:function(){

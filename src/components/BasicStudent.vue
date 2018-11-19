@@ -147,7 +147,6 @@
                   <el-button type="primary" @click="submitExcel">确 定</el-button>
                 </div>
               </el-dialog>
-              <el-dialog title="请输入密码" :visible.sync="pwd1DialogVisible">
                 <el-input v-model="password" type="password" auto-complete="off"></el-input>
                 <div slot="footer" class="dialog-footer">
                   <el-button @click="pwd1DialogVisible = false">取 消</el-button>
@@ -324,7 +323,7 @@ export default {
         {label:'母亲姓名',prop:'motherName',show:false},{label:'母亲工作单位',prop:'motherWorkUnit',show:false},
         {label:'母亲工作单位地址',prop:'motherWorkUnitAddress',show:false},{label:'母亲职务',prop:'motherDuty',show:false},
         {label:'母亲邮编',prop:'motherPostcode',show:false},{label:'母亲电话',prop:'motherTelNumber',show:false},
-        {label:'学业状态',prop:'studyStatus',show:false}
+        {label:'学业状态',prop:'studyCondition',show:false}
       ],
       allInfoProperties:[
         {label:'学号',code:"studentId"},{label:'姓名',code:'name'},{label:'年级',code:'grade'},
@@ -341,7 +340,7 @@ export default {
         {label:'父亲工作单位地址',code:'fatherWorkUnitAddress'},{label:'父亲职务',ccode:'fatherDuty'},{label:'父亲邮编',code:'fatherPostcode'},{label:'父亲电话',code:'fatherTelNumber'},
         {label:'母亲姓名',code:'motherName'},{label:'母亲工作单位',code:'motherWorkUnit'},{label:'母亲工作单位地址',code:'motherWorkUnitAddress'},{label:'母亲职务',code:'motherDuty'},
         {label:'母亲邮编',code:'motherPostcode'},{label:'母亲电话',code:'motherTelNumber'},
-        {label:'学业状态',code:'studyStatus'}
+        {label:'学业状态',code:'studyCondition'}
       ],
       personalInfoProperties:[
         {label:'学号',code:"studentId"},{label:'姓名',code:'name'},{label:'年级',code:'grade'},{label:'班级',code:'studentClass'},
@@ -395,7 +394,7 @@ export default {
         {prop: "motherName",label:'母亲姓名',checked:false},{prop: "motherWorkUnit",label:'母亲工作单位',checked:false},
         {prop: "motherWorkUnitAddress",label:'母亲工作单位地址',checked:false},{prop: "motherDuty",label:'母亲职务',checked:false},
         {prop: "motherPostcode",label:'母亲邮编',checked:false},{prop: "motherTelNumber",label:'母亲电话',checked:false},
-        {prop: "studyStatus",label:'学业状态',checked:false}
+        {prop: "studyCondition",label:'学业状态',checked:false}
       ],
       activeInfoName:'allInfo',
       password:'',
@@ -460,15 +459,20 @@ export default {
   methods:{
     submitPhotos(){
       this.photoDialogVisible=false
-      var self=this
+      this.$prompt('请输入密码', '提示', {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+        }).then(({ value }) => {
+          var self=this
       var token = sessionStorage.getItem("token");
       var form = new FormData();
       for(var i=0;i<self.imgList.length;i++){
-          form.append('file'+i,self.imgList[i])
+          form.append('photos',self.imgList[i].file)
       }
       form.append('teacherId',sessionStorage.getItem("userName"));
+      form.append('password',value)
       $.ajax({
-          url:"http://"+self.Global.ipAddr+"/newhelp/api/import/baseStudent",
+          url:"http://"+self.Global.ipAddr+"/newhelp/api/baseStudent/photos",
           type:"POST",
           beforeSend:function(request){
               request.setRequestHeader("Authorization",token);
@@ -477,12 +481,23 @@ export default {
           contentType:false,
           processData:false,
           success:function(data){
+            if(data.success){
+              alert('上传成功！');
+              window.location.reload()
+            }else{
               alert(data.message);
+            }
           },
           error:function(XMLHttpRequest,textStatus,errorThrown,data){
               alert("上传照片失败"+XMLHttpRequest.status);
           }
       })
+        }).catch(() => {
+          this.$message({
+            type: 'info',
+            message: '取消输入'
+          });       
+        });
 },
   fileClick(){
       document.getElementById('upload_file').click()
@@ -543,9 +558,9 @@ export default {
             data:form,
             contentType:false,
             processData:false,
-            dataType:'json',
             success:function(data){
                 alert(data.message);
+                self.password=''
             },
             error:function(XMLHttpRequest,textStatus,errorThrown,data){
                 alert("上传失败"+XMLHttpRequest.status);
@@ -763,7 +778,7 @@ export default {
  },
     dropSchool(){
       var self=this
-      this.$confirm('确定将'+self.testData[self.index].studentName+'同学退学?', '提示', {
+      this.$confirm('确定将'+self.testData[self.index].name+'同学退学?', '提示', {
           confirmButtonText: '确定',
           cancelButtonText: '取消',
           type: 'warning'
@@ -775,6 +790,41 @@ export default {
             message: '已取消'
           });          
         });
+    },
+    confirmDropSchool(){
+      if(this.password){
+        var self=this
+        this.pwd1DialogVisible=false
+        var token = sessionStorage.getItem("token");
+        var uploadData=JSON.stringify({
+          studentId:self.testData[self.index].studentId,
+          teacher:{
+            teacherId:sessionStorage.getItem('userName'),
+            password:self.password
+          }
+        })
+        $.ajax({
+            url:"http://"+self.Global.ipAddr+"/newhelp/api/baseStudent/dropout",
+            type:"POST",
+            beforeSend:function(request){
+                request.setRequestHeader("Authorization",token);
+            },
+            data:uploadData,
+            contentType: "application/json; charset=utf-8",
+            dataType:'json',
+            success:function(data){
+              if(data.success){
+                alert('退学成功！')
+                window.location.reload();
+              }else{
+                alert(data.message);
+              }
+            },
+            error:function(XMLHttpRequest,textStatus,errorThrown,data){
+                alert("上传失败"+XMLHttpRequest.status);
+            }
+        })
+      }
     },
     showSearchBox(){
       this.formInline={
@@ -878,7 +928,6 @@ export default {
         val.shift()
       }
       this.choosedStudents = val
-      console.log(this.choosedStudents)
     },
     onSubmit() {
             console.log('submit!');

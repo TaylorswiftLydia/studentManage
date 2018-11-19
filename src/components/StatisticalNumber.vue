@@ -27,18 +27,12 @@
                 <el-option v-for="ethnicGroup in allNations" :label='ethnicGroup' :value="ethnicGroup"></el-option>
             </el-select>
         </el-form-item>
-        <el-form-item label="性别">
-            <el-select v-model="formInline.sex">
-                    <el-option label="男" value="男"></el-option>
-                    <el-option label="女" value="女"></el-option>
-            </el-select>
-        </el-form-item>
         <el-form-item>
             <el-button type="primary" @click="searchStu">人数查询</el-button>
         </el-form-item>
     </el-form>
     <!-- 为ECharts准备一个具备大小（宽高）的Dom -->
-    <div id="main" style="display:inline-block;width:550px;height:400px;"></div>
+    <div :id="this.main" style="display:inline-block;width:550px;height:400px;"></div>
     <div id="sex-ratio" style="display:inline-block;width:550px;height:400px"></div>
     </div>
 </template>
@@ -47,6 +41,8 @@ import echarts from 'echarts'
 export default {
     data(){
         return{
+            main:'main',
+            toBeSentKeywords:JSON.stringify({}),
             allNations:[
                 "汉族","壮族","满族","回族","苗族","维吾尔族","土家族","彝族","蒙古族","藏族","布依族","侗族",
                 "瑶族","朝鲜族","白族","哈尼族","哈萨克族","黎族","傣族","畲族","傈僳族","仡佬族","东乡族","高山族","拉祜族",
@@ -69,8 +65,7 @@ export default {
                 name:"",
                 studentId:"",
                 birthOrigin:"",
-                ethnicGroup:"",
-                sex:""
+                ethnicGroup:""
             },
             // 指定图表的配置项和数据
             option:{
@@ -124,21 +119,107 @@ export default {
         var myChart = echarts.init(document.getElementById('main'));
         
         // 使用刚指定的配置项和数据显示图表。
-        myChart.setOption(this.option);
+        myChart.setOption(this.option,true);
         var myChart2 = echarts.init(document.getElementById('sex-ratio'),'light');
-        myChart2.setOption(this.option2)
+        myChart2.setOption(this.option2,true)
     },
     created(){
-        this.option.title.subtext='在校：0人\n休学：0人\n退学：0人';
+        var studyCondition=this.option.series[0].data
+        var sex = this.option2.series[0].data
         for(var i=0;i<this.option.series[0].data.length;i++)
         {
-            this.option.series[0].data[i].value=0
+            studyCondition[i].value=0
         }
-        this.option2.title.subtext='男生：0人\n女生：0人';
+        this.option.title.subtext='在校：'+studyCondition[0].value+'人\n休学：'+studyCondition[1].value+'人\n退学：'+studyCondition[2].value+'人';
         for(var i=0;i<this.option2.series[0].data.length;i++)
         {
-            this.option2.series[0].data[i].value=0
+            sex[i].value=0
         }
+        this.option2.title.subtext='男生：'+sex[0].value+'人\n女生：'+sex[1].value+'人';
+    },
+    methods:{
+        searchStu(){
+        this.toBeSentKeywords = JSON.stringify({
+            "studentId":this.formInline.studentId,
+            "name":this.formInline.name,
+            "grade":this.formInline.grade,
+            "studentClass":this.formInline.studentClass,
+            "sex":this.formInline.sex,
+            "duty":"",
+            "dormitory":"",
+            "contactWay":"",
+            "idCardNumber":"",
+            "qqNumber":"",
+            "email":"",
+            "birthday":"",
+            "height":"",
+            "major":this.formInline.major,
+            "politicalStatus":this.formInline.politicalStatus,
+            "ethnicGroup":this.formInline.ethnicGroup,
+            "birthOrigin":this.formInline.birthOrigin,
+            "collegeEntranceExamScore":"",
+            "collegeEntranceExamEnglishScore":"",
+            "entranceExamEnglishScore":"",
+            "hometownRailwayStation":"",
+            "province":"",
+            "city":"",
+            "familyAddress":"",
+            "familyTelNumber":"",
+            "postcode":"",
+            "specialty":"",
+            "dutyInHighSchool":"",
+            "awardInHighSchool":"",
+            "isHadTechnologyCompetitionAward":"",
+            "fatherName":"",
+            "fatherWorkUnit":"",
+            "fatherWorkUnitAddress":"",
+            "fatherDuty":"",
+            "fatherPostcode":"",
+            "fatherTelNumber":"",
+            "motherName":"",
+            "motherWorkUnit":"",
+            "motherWorkUnitAddress":"",
+            "motherDuty":"",
+            "motherPostcode":"",
+            "motherTelNumber":""
+        });
+        var self=this
+        $.ajax({
+            url:"http://"+self.Global.ipAddr+"/newhelp/api/baseStudent/count",
+            beforeSend:function(request){
+                request.setRequestHeader("Authorization",sessionStorage.getItem('token'));
+            },
+            type:"POST",
+            contentType: "application/json; charset=utf-8",
+            dataType:"json",
+            data:this.toBeSentKeywords,
+            success:function(res){
+            if(res.success){
+                var studyCondition=self.option.series[0].data
+                var sex = self.option2.series[0].data
+                sex[0].value=res.data.male
+                sex[1].value=res.data.female
+                studyCondition[0].value=res.data.currentStuNum
+                studyCondition[1].value=res.data.suspendedStuNum
+                studyCondition[2].value=res.data.dropoutStuNum
+                self.option.title.subtext='在校：'+studyCondition[0].value+'人\n休学：'+studyCondition[1].value+'人\n退学：'+studyCondition[2].value+'人';
+                self.option2.title.subtext='男生：'+sex[0].value+'人\n女生：'+sex[1].value+'人';
+                // 基于准备好的dom，初始化echarts实例
+                var myChart = echarts.init(document.getElementById('main'));
+                var myChart2 = echarts.init(document.getElementById('sex-ratio'),'light');
+        
+                // 使用刚指定的配置项和数据显示图表。
+                myChart.setOption(self.option);
+                myChart2.setOption(self.option2)
+            }else{
+                alert("数据获取错误");
+            }
+            },
+            error:function(){
+                alert("数据获取错误");
+            },
+        });
+    },
     }
 }
 </script>
